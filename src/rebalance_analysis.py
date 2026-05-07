@@ -1,6 +1,7 @@
 import csv
 import os
 from datetime import datetime, timedelta
+import statistics
 
 def load_data(etf_list, data_dir='data'):
     data = {}
@@ -18,26 +19,38 @@ def load_data(etf_list, data_dir='data'):
                 data[date_str][etf] = price
     return data
 
-def get_sorted_dates(data, start_date, end_date):
-    dates = [d for d in data.keys() if start_date <= d <= end_date]
+def get_sorted_dates(data):
+    dates = list(data.keys())
     dates.sort()
     return dates
 
-def run_simulation(etfs, data, sorted_dates, target_allocation, rebalance_freq=None):
+def find_closest_date(target_date_str, sorted_dates):
+    """Finds the closest available trading day on or after the target date."""
+    for date_str in sorted_dates:
+        if date_str >= target_date_str:
+            return date_str
+    return sorted_dates[-1]
+
+def run_simulation(etfs, data, sorted_dates, target_allocation, start_date_str, end_date_str, rebalance_freq=None):
+    # Filter dates for this specific window
+    window_dates = [d for d in sorted_dates if start_date_str <= d <= end_date_str]
+    if not window_dates:
+        return 0.0
+
     # Initial setup
     initial_cash = 10000.0
-    start_date = sorted_dates[0]
-    prices = data[start_date]
+    actual_start_date = window_dates[0]
+    prices = data[actual_start_date]
 
     # Calculate initial shares
     shares = {}
     for etf, weight in target_allocation.items():
         shares[etf] = (initial_cash * weight) / prices[etf]
 
-    last_rebalance_date = datetime.strptime(start_date, '%Y-%m-%d')
+    last_rebalance_date = datetime.strptime(actual_start_date, '%Y-%m-%d')
 
-    for i in range(1, len(sorted_dates)):
-        current_date_str = sorted_dates[i]
+    for i in range(1, len(window_dates)):
+        current_date_str = window_dates[i]
         current_date = datetime.strptime(current_date_str, '%Y-%m-%d')
 
         should_rebalance = False
@@ -67,7 +80,7 @@ def run_simulation(etfs, data, sorted_dates, target_allocation, rebalance_freq=N
             last_rebalance_date = current_date
 
     # Final value
-    final_prices = data[sorted_dates[-1]]
+    final_prices = data[window_dates[-1]]
     final_value = sum(shares[etf] * final_prices[etf] for etf in etfs)
     return final_value
 
@@ -81,9 +94,11 @@ def main():
     }
 
     data = load_data(etfs)
-    start_date = '2004-01-02'
-    end_date = '2026-05-05'
-    sorted_dates = get_sorted_dates(data, start_date, end_date)
+    sorted_dates = get_sorted_dates(data)
+
+    # Define start and end range for rolling windows
+    start_range_begin = datetime(2004, 1, 5)
+    start_range_end = datetime(2016, 5, 2)
 
     scenarios = [
         ('Buy and Hold', None),
@@ -95,16 +110,36 @@ def main():
         ('Annually', 'annually')
     ]
 
-    print(f"Portfolio Simulation: {start_date} to {end_date}")
-    print(f"Initial Investment: $10,000")
-    print(f"Target Allocation: {target_allocation}")
-    print("-" * 50)
-    print(f"{'Scenario':<20} {'Final Value':<15}")
-    print("-" * 50)
+    results = {name: [] for name, _ in scenarios}
 
-    for name, freq in scenarios:
-        final_val = run_simulation(etfs, data, sorted_dates, target_allocation, freq)
-        print(f"{name:<20} ${final_val:,.2f}")
+    current_monday = start_range_begin
+    window_count = 0
+
+    print(f"Running rolling 10-year window simulation...")
+
+    while current_monday <= start_range_end:
+        start_date_str = find_closest_date(current_monday.strftime('%Y-%m-%d'), sorted_dates)
+
+        # 10 years later
+        target_end_date = current_monday + timedelta(days=365 * 10 + 2) # Adding a couple days for leap years
+        end_date_str = find_closest_date(target_end_date.strftime('%Y-%m-%d'), sorted_dates)
+
+        for name, freq in scenarios:
+            final_val = run_simulation(etfs, data, sorted_dates, target_allocation, start_date_str, end_date_str, freq)
+            results[name].append(final_val)
+
+        current_monday += timedelta(weeks=1)
+        window_count += 1
+
+    print("-" * 75)
+    print(f"{'Scenario':<20} {'Avg Final Value':<20} {'Std Dev':<15} {'Count':<5}")
+    print("-" * 75)
+
+    for name, _ in scenarios:
+        vals = results[name]
+        avg = statistics.mean(vals)
+        std_dev = statistics.stdev(vals) if len(vals) > 1 else 0
+        print(f"{name:<20} ${avg:,.2f} {' ' * 5} ${std_dev:,.2f} {' ' * 5} {len(vals)}")
 
 if __name__ == "__main__":
     main()
