@@ -1,0 +1,13 @@
+Portfolio Simulation: 2004-01-02 to 2026-05-05
+Initial Investment: $10,000
+Target Allocation: {'SPY': 0.5, 'AGG': 0.2, 'IJR': 0.15, 'EEM': 0.15}
+--------------------------------------------------
+Scenario             Final Value
+--------------------------------------------------
+Buy and Hold         $73,430.81
+Daily                $72,141.80
+Weekly               $70,010.14
+Monthly              $69,823.40
+Quarterly            $70,015.08
+Semi-Annually        $69,410.26
+Annually             $70,166.99
