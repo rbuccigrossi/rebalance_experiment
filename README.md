@@ -18,24 +18,29 @@ The data includes Adjusted Close prices, which account for dividend reinvestment
 
 ## Experiments
 
-### Rolling 10-Year Window Simulation
+### 1. Rolling 10-Year Window Rebalancing Simulation
 
-To capture market volatility and reduce bias from specific time periods (like recent market spikes), we perform a rolling window analysis.
+To capture market volatility and reduce bias from specific time periods, we perform a rolling window analysis on rebalancing frequency.
 
 - **Start Range**: Every Monday from January 5, 2004, to May 2, 2016.
-- **Duration**: Each window spans 10 years (approx. 248 windows in total).
-- **Initial Investment**: $10,000.
+- **Duration**: Each window spans 10 years.
 - **Target Allocation**: 50% SPY, 20% AGG, 15% IJR, 15% EEM.
-- **Scenarios**:
-    - Buy and Hold (No rebalancing)
-    - Daily
-    - Weekly
-    - Monthly
-    - Quarterly
-    - Semi-Annually
-    - Annually
+- **Scenarios**: Buy and Hold, Daily, Weekly, Monthly, Quarterly, Semi-Annually, Annually.
 
-The script calculates the average final portfolio value and the standard deviation (variance) for each scenario across all windows.
+### 2. Rolling 10-Year Window Target Allocation Analysis
+
+Using a fixed rebalancing frequency (Quarterly), we compare different asset allocations.
+
+- **Start Range**: Every Monday from January 5, 2004, to May 2, 2016.
+- **Duration**: Each window spans 10 years.
+- **Rebalancing Frequency**: Quarterly.
+- **Allocations Tested**:
+    - 100% SPY
+    - 75% SPY, 25% AGG
+    - 50% SPY, 50% AGG
+    - 50% SPY, 30% AGG, 10% IJR, 10% EEM
+    - 50% SPY, 20% AGG, 15% IJR, 15% EEM
+    - 50% SPY, 10% AGG, 20% IJR, 20% EEM
 
 ## Directory Structure
 
@@ -46,14 +51,16 @@ The script calculates the average final portfolio value and the standard deviati
 ## How to Run
 
 ### 1. Data Verification
-Verify the date ranges and integrity of the source CSV files:
 ```bash
 python3 src/verify_data.py
 ```
 
-### 2. Rebalancing Analysis
-Run the rolling 10-year window simulation:
+### 2. Rebalancing Frequency Analysis
 ```bash
 python3 src/rebalance_analysis.py
 ```
-The results will display the average final value and standard deviation for each rebalancing approach.
+
+### 3. Target Allocation Analysis
+```bash
+python3 src/allocation_analysis.py
+```
